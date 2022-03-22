@@ -4,7 +4,7 @@
 #' date: "2020-22-02"
 #' output:
 #'    html_document:
-#'       self_contained: yes
+#'       self_contained: true
 #'       theme: lumen
 #'       includes:
 #'         after_body: footer.html
@@ -32,37 +32,31 @@ require("tidyr")
 require("jagsUI")
 
 
-fingerprint_file_path <- 
-  ifelse(identical(as.character(Sys.getenv()["OS"]),"Windows_NT"),
-         "C:/Users/aburchil/Dropbox (ASU)/akiva-stuff/full_fingerprints.csv",
-         "full_fingerprints.csv")
-
+fingerprint_file_path <- "kralik_novotny_fingerprints.csv"
 
 
 lineup <- function(mrbs,x) {
-  fullfing <-
+  ref_data <-
     read.csv(file=fingerprint_file_path) %>%
-    as_tibble() %>% mutate(mrb=RB)
-  
-  kralik_data <-
-    fullfing %>% 
+    as_tibble() %>% 
     group_by(ID) %>%
     summarize(mrb=mean(RB), age=unique(age), sex=unique(sex))
   
-  quantile(kralik_data$mrb,x)/quantile(mrbs,x)
+  quantile(ref_data$mrb,x)/quantile(mrbs,x)
 }
 
 lineup2 <- function(mrbs,x,type=c("males","adult males", "adults"),adult_age=15) {
-  fullfing<-read.csv(file=fingerprint_file_path) %>% as_tibble()
+  ref_data<-    read.csv(file=fingerprint_file_path) %>%
+    as_tibble()
   
-  kralik_data <-
-    fullfing %>% 
+  ref_data <-
+    ref_data %>% 
     group_by(ID) %>%
     summarize(mrb=mean(RB), age=unique(age), sex=unique(sex)) 
   db = switch(type,
-              "adults" = filter(kralik_data, age >= adult_age),
-              "males" = filter(kralik_data, sex == 2),
-              "adult males" = filter(kralik_data, age >= adult_age, sex == 2)
+              "adults" = filter(ref_data, age >= adult_age),
+              "males" = filter(ref_data, sex == 2),
+              "adult males" = filter(ref_data, age >= adult_age, sex == 2)
   )
   
   quantile(db$mrb,x)/quantile(mrbs,x)
@@ -404,18 +398,18 @@ raw.string <- paste(raw.string.head, raw.string.tail) %>%
   setNames(names(raw.string.tail)) 
 
 ## Men are SEX = 2!!! Women are SEX = 1
-fullfing<-read.csv(file=fingerprint_file_path) %>% as_tibble()
+ref_data<-read.csv(file=fingerprint_file_path) %>% as_tibble()
 
-kralik_data <-
-  fullfing %>% 
+ref_data <-
+  ref_data %>% 
   group_by(ID) %>%
   summarize(mrb=mean(RB), age=unique(age), sex=unique(sex)) 
 
 male_coef <-
-  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(kralik_data, sex==2)) %>% 
+  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(ref_data, sex==2)) %>% 
   coef()
 female_coef <-   
-  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(kralik_data, sex==1)) %>% 
+  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(ref_data, sex==1)) %>% 
   coef()
 
 
@@ -828,8 +822,6 @@ get_pseudopriors <- function (one.run, model.opt = c("2sex.2age","1sex.1age","2s
   }
   return(pseudopriorz)
 }
-
-
 
 
 compare_1age2age <- function(db, iters=5000000, thin=100, n.chains=10, 
