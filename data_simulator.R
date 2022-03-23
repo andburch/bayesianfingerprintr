@@ -1,21 +1,20 @@
-#kralik_data %>% filter(age<22) %>% {.$age*12 - .$mrb*614* 1.08108} %>% mean() %>% divide_by(112)
+#ref_data %>% filter(age<22) %>% {.$age*12 - .$mrb*614* 1.08108} %>% mean() %>% divide_by(112)
 
 simulate_data <- function(Nsize = 100, prob_male = 0.8, MFmean_ages = c(20,15), MFsd_ages = c(10,10), errors=T, seed=1337) {
   
   library(qpcR, include.only = 'RMSE')
   
-  fullfing <-read.csv(file=fingerprint_file_path) %>% as_tibble()
-  
-  kralik_data <-
-    fullfing %>% 
+  ref_data <-
+    read.csv(file=fingerprint_file_path) %>%
+    as_tibble() %>% 
     group_by(ID) %>%
     summarize(mrb=mean(RB), age=unique(age), sex=unique(sex)) 
   
   male_coef <-
-    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(kralik_data, sex==2)) %>% 
+    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(ref_data, sex==2)) %>% 
     coef()
   female_coef <-   
-    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(kralik_data, sex==1)) %>% 
+    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(ref_data, sex==1)) %>% 
     coef()
   
   set.seed(seed)
@@ -36,12 +35,12 @@ simulate_data <- function(Nsize = 100, prob_male = 0.8, MFmean_ages = c(20,15), 
 
   
   men_sd <- 
-    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(kralik_data, sex==2)) %>%
+    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(ref_data, sex==2)) %>%
     qpcR::RMSE()
   men_errors <- rnorm(Nsize, 0, men_sd)/2
   
   women_sd <- 
-    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(kralik_data, sex==1)) %>%
+    nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=filter(ref_data, sex==1)) %>%
     qpcR::RMSE()
   women_errors <- rnorm(Nsize, 0, women_sd)/2
   
@@ -431,7 +430,7 @@ plot_models_success <- function(dbz,sex.est=T) {
 
 #based on Kraliks data, this is what the threshold should be:
 sex.threshold.model <- glm(sex ~ RD, 
-                           data=kralik_data %>% mutate( RD = 5*sqrt(2)/mrb, sex=sex-1) %>% 
+                           data=ref_data %>% mutate( RD = 5*sqrt(2)/mrb, sex=sex-1) %>% 
                              filter(age>18), family="binomial") 
 
 sex.threshold <- -coef(sex.threshold.model)[1] / coef(sex.threshold.model)[2]
@@ -493,7 +492,7 @@ plot_models_success(
   
   #################
   
-  kralik_data %<>% rowwise() %>% mutate(RD = 5*sqrt(2)/mrb,
+  ref_data %<>% rowwise() %>% mutate(RD = 5*sqrt(2)/mrb,
                           fake.RD = if_else(sex=="male",
                                             floor(RD),
                                             ceiling(RD)),
@@ -503,9 +502,9 @@ plot_models_success(
   
   hey<-
   mutate(tibble(type="kralik"),
-         simulated_data = list(kralik_data )) %>% 
+         simulated_data = list(ref_data )) %>% 
     rowwise() %>% 
-         mutate(other_model_estimates = list(fowler_calculations(kralik_data,14.9,14.9)),
+         mutate(other_model_estimates = list(fowler_calculations(ref_data,14.9,14.9)),
          other_model_predictions(other_model_estimates)) %>% 
     rowwise() %>% 
     mutate(run_single_model_ALOT(simulated_data, 150000,5))
