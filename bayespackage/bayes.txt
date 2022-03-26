@@ -1,0 +1,60 @@
+model {
+
+#stdev for likelihood function
+sd ~ dgamma(2, 10)
+
+for (i in 1:N) {
+
+  #Likelihood function is a normal distribution
+  mrb[i] ~ dnorm(u[i], 1/sd^2)
+
+  #calculate log... likelihood?
+  LogLik[i] <- logdensity.norm(mrb[i],u[i], 1/sd^2)
+
+  #If you want the MRB likelihood function to be gamma distributed, use this:
+  #mrb[i] ~ dgamma(shape[i], rate[i])
+  #shape[i] <- (u[i]/sd)^2
+  #rate[i] <- u[i]/sd^2
+
+  #The asymptote equation is: Asym+(R0-Asym)*exp(-exp(lrc)*input)
+    u[i] <- (Asym[sex[i]]) +
+          (R0[sex[i]] - (Asym[sex[i]]))*
+          exp(-1*exp(lrc[sex[i]]) * age[i])
+
+  #The latent 'age' variable is pulled from one of two gamma distributions,
+  #depending on the inferred sex. The gamma distributions for each sex have their
+  #own hyper priors, allowing them to be updated based on the data.
+
+  age[i] ~ dgamma((hyper_age_mean[sex[i]]/hyper_age_sd[sex[i]])^2, hyper_age_mean[sex[i]]/hyper_age_sd[sex[i]]^2)
+
+  #Sex is chosen based off the probability of belonging to one or another distribution (sex)
+  sex[i] ~ dcat(sexprobs)
+
+}
+
+#hyperpriors for the gamma distribution of ages for each sex
+hyper_age_mean[1] ~ dgamma(4,.2)
+hyper_age_mean[2] ~ dgamma(4,.2)
+
+hyper_age_sd[1] ~ dgamma(1,.1)
+hyper_age_sd[2] ~ dgamma(1,.1)
+
+
+#Normal, but TIGHT priors for the asymptote parameters,
+#derived from using an asymptotic regression model on Kralik's data.
+Asym[2] ~ dnorm(0.504330954064774,1/.008^2)
+R0[2] ~ dnorm(0.189265814785443,1/.008^2)
+lrc[2] ~ dnorm(-2.2724351133648,1/.03^2)
+
+Asym[1] ~ dnorm(0.453667882885502,1/.008^2)
+R0[1] ~ dnorm(0.189070293352124,1/.008^2)
+lrc[1] ~ dnorm(-2.11712260452305,1/.03^2)
+
+
+#the sex distribution
+pClust ~ dbeta(1,1)
+sexprobs[1] = pClust #female
+sexprobs[2] = 1-pClust #male
+
+}
+

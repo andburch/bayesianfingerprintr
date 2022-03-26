@@ -470,7 +470,7 @@ insert_coefficients <- function(stringz, namez) {
 #cat(names(raw.string))
 
 #makes final versions of all models, with the right coefficients
-model.string <- imap_chr(raw.string, insert_coefficients)
+model.string <- purrr::imap_chr(raw.string, insert_coefficients)
 
 #this saves the model as an external text file (useful for multi-cores)
 sink(filename)
@@ -485,8 +485,8 @@ return(nodes[model.opt])
 
 run_model <- function(  
   db, model.opt = c("2sex.2age","1sex.1age","2sex.1age","1sex.2age", "compare1v2age", "compare1v2ageNEXT"), filename="bayesmodel.txt",
-  iters, thin, is.parallel=F, DIC=F, n.chains=10, return.raw.samples=F, pseudopriors=NULL,
-  n.adapt=3000, n.burnin=100, fix.biggest=T){
+  iters, thin, is.parallel=F, DIC=F, n.chains=10, return.raw.samples=F,
+  n.adapt=3000, n.burnin=100, fix.biggest=T,pseudopriors=NULL){
   
   single.sex.model <- model.opt %in% c("1sex.1age") #also found in make_modelstring
   
@@ -496,7 +496,7 @@ run_model <- function(
   if("rowid." %in% colnames(db)) {
     stop("Supplied dataframe should not have a 'rowid.' column!")
   } else {
-    db <- db %>% rowid_to_column("rowid.")
+    db <- db %>% tibble::rowid_to_column("rowid.")
   }
 #give the model run a name, hopefully based off a "groups" column
   
@@ -510,7 +510,7 @@ run_model <- function(
   temp.data <-
     db %>% 
     transmute(mrb=mrb, sex=NA) %>%
-    as.list() %>% {inset(., "N", length(.$mrb))} 
+    as.list() %>% {`[<-`(., "N", length(.$mrb))} 
   
   #Set the largest fingerprint size to be male (this is an assumption)
   if(fix.biggest){
@@ -531,12 +531,12 @@ run_model <- function(
   #determine if you want multiple cores or not
   
   if (is.parallel) {
-    samps <- jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% flatten_chr(), 
+    samps <- jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% purrr::flatten_chr(), 
                           model.file = filename, n.chains=n.chains, n.cores=n.chains, DIC=DIC,
                           parallel = is.parallel, n.adapt=n.adapt, n.burnin=n.burnin,
                           n.thin=thin, n.iter = iters)
   } else {
-    samps <- jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% flatten_chr(), 
+    samps <- jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% purrr::flatten_chr(), 
                           model.file = filename, n.chains=n.chains, n.cores=NULL, DIC=DIC,
                           parallel = is.parallel, n.adapt=n.adapt, n.burnin=n.burnin,
                           n.thin=thin, n.iter = iters)
@@ -557,19 +557,19 @@ run_model <- function(
     title <- ifelse(is.null(attributes(samps)$original.group),"bayes",attributes(samps)$original.group)
     
     post_data <- 
-      tibble(est_age = map_df(samps, ~as_tibble(.)  %>% 
+      tibble(est_age = purrr::map_df(samps, ~as_tibble(.)  %>% 
                                 select(starts_with("age")), simplify=T) %>% unlist(),
              
-             LogLik = map_df(samps, ~as_tibble(.)  %>% 
+             LogLik = purrr::map_df(samps, ~as_tibble(.)  %>% 
                                select(starts_with("LogLik")), simplify=T) %>% unlist(),
              
              #List estimate sex as only males NOW, but then we'll fix it later in the pipe
              #it had some weird behavior
-             est_sex = map_df(samps, ~as_tibble(.)  %>% 
+             est_sex = purrr::map_df(samps, ~as_tibble(.)  %>% 
                                 select(starts_with("age")), simplify=T) %>%
                unlist() %>% length() %>% rep(2,.),
              
-             rowid. = map_df(samps, ~as_tibble(.)  %>% 
+             rowid. = purrr::map_df(samps, ~as_tibble(.)  %>% 
                                select(starts_with("age")), simplify=T) %>%
                unlist() %>% 
                names() %>% 
@@ -581,7 +581,7 @@ run_model <- function(
       #add actual sex estimates when needed
       
       {if(!single.sex.model) mutate(.,
-                                    est_sex = map_df(samps, ~as_tibble(.) %>% select(starts_with("sex")),
+                                    est_sex = purrr::map_df(samps, ~as_tibble(.) %>% select(starts_with("sex")),
                                                      simplify=T) %>% unlist()
       ) else .} %>% 
       
@@ -637,9 +637,9 @@ posterior_plot <- function(db, is.it.raw.samples=F, percentilex=NULL) {
     
     post_data <- NULL
     post_data <- 
-      tibble(est_age = map_df(db, ~as_tibble(.)  %>% 
+      tibble(est_age = purrr::map_df(db, ~as_tibble(.)  %>% 
                                 select(starts_with("age")), simplify=T) %>% unlist(),
-             est_sex = map_df(db, ~as_tibble(.)  %>% 
+             est_sex = purrr::map_df(db, ~as_tibble(.)  %>% 
                                 select(starts_with("sex")), simplify=T) %>% unlist()
       ) 
     
