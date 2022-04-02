@@ -13,7 +13,8 @@
 #' @examples
 #' print("hello")
 #'
-#' @import stats dplyr
+#' @import dplyr
+#' @rawNamespace import(stats, except = c(lag, filter))
 
 
 make_modelstring <-
@@ -356,14 +357,14 @@ raw.string <- paste(raw.string.head, raw.string.tail) %>%
 ref_data <-
   ref_data %>%
   as_tibble() %>%
-  group_by(ID) %>%
-  summarize(mrb=mean(RB), age=unique(age), sex=unique(sex))
+  group_by(.data$ID) %>%
+  summarize(mrb=mean(.data$RB), age=unique(.data$age), sex=unique(.data$sex))
 
 male_coef <-
-  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=dplyr::filter(ref_data, sex==2)) %>%
+  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=dplyr::filter(ref_data, .data$sex==2)) %>%
   coef()
 female_coef <-
-  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=dplyr::filter(ref_data, sex==1)) %>%
+  nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=dplyr::filter(ref_data, .data$sex==1)) %>%
   coef()
 
 

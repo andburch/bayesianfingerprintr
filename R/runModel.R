@@ -31,7 +31,8 @@
 #'
 #' }
 #'
-#' @import stats dplyr
+#' @import dplyr
+#' @rawNamespace import(stats, except = c(lag, filter))
 
 run_model <- function(
   db, model.opt = c("2sex.2age","1sex.1age","2sex.1age","1sex.2age", "compare1v2age", "compare1v2ageNEXT"), filename="bayesmodel.txt",
@@ -59,8 +60,8 @@ run_model <- function(
   #make data ready for rjags
   temp.data <-
     db %>%
-    transmute(mrb=mrb, sex=NA) %>%
-    as.list() %>% {`[<-`(., "N", length(.$mrb))}
+    transmute(mrb=.data$mrb, sex=NA) %>%
+    as.list() %>% {`[<-`(.data, "N", length(.data$mrb))}
 
   #Set the largest fingerprint size to be male (this is an assumption)
   if(fix.biggest){
@@ -107,19 +108,19 @@ run_model <- function(
     title <- ifelse(is.null(attributes(samps)$original.group),"bayes",attributes(samps)$original.group)
 
     post_data <-
-      tibble(est_age = purrr::map_df(samps, ~as_tibble(.)  %>%
+      tibble(est_age = purrr::map_df(samps, ~as_tibble(.data)  %>%
                                        select(starts_with("age")), simplify=T) %>% unlist(),
 
-             LogLik = purrr::map_df(samps, ~as_tibble(.)  %>%
+             LogLik = purrr::map_df(samps, ~as_tibble(.data)  %>%
                                       select(starts_with("LogLik")), simplify=T) %>% unlist(),
 
              #List estimate sex as only males NOW, but then we'll fix it later in the pipe
              #it had some weird behavior
-             est_sex = purrr::map_df(samps, ~as_tibble(.)  %>%
+             est_sex = purrr::map_df(samps, ~as_tibble(.data)  %>%
                                        select(starts_with("age")), simplify=T) %>%
-               unlist() %>% length() %>% rep(2,.),
+               unlist() %>% length() %>% rep(2,.data),
 
-             rowid. = purrr::map_df(samps, ~as_tibble(.)  %>%
+             rowid. = purrr::map_df(samps, ~as_tibble(.data)  %>%
                                       select(starts_with("age")), simplify=T) %>%
                unlist() %>%
                names() %>%
@@ -130,10 +131,10 @@ run_model <- function(
 
       #add actual sex estimates when needed
 
-      {if(!single.sex.model) mutate(.,
-                                    est_sex = purrr::map_df(samps, ~as_tibble(.) %>% select(starts_with("sex")),
+      {if(!single.sex.model) mutate(.data,
+                                    est_sex = purrr::map_df(samps, ~as_tibble(.data) %>% select(starts_with("sex")),
                                                             simplify=T) %>% unlist()
-      ) else .} %>%
+      ) else .data} %>%
 
       mutate(est_sex = case_when(est_sex == 2 ~ "male", est_sex == 1 ~ "female",
                                  TRUE ~ as.character(est_sex)) %>% factor(levels=c("male","female"))

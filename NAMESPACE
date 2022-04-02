@@ -3,5 +3,5 @@
 export("%>%")
 export(run_model)
 import(dplyr)
-import(stats)
+import(stats, except = c(lag, filter))
 importFrom(magrittr,"%>%")
