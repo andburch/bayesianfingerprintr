@@ -1,16 +1,16 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# bayespackage
+# bayesianfingerprintr
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of bayespackage is to …
+The goal of bayesianfingerprintr is to …
 
 ## Installation
 
-You can install the development version of bayespackage from
+You can install the development version of bayesianfingerprintr from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -23,7 +23,7 @@ devtools::install_github("andburch/fingerprint-mixture-model")
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
-library(bayespackage)
+library(bayesianfingerprintr)
 
 fake.data <- 
   data.frame(

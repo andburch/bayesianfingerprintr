@@ -2,7 +2,7 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^bayespackage\.Rproj$
+^bayesianfingerprintr\.Rproj$
 ^LICENSE\.md$
 ^\.github$
 ^README\.Rmd$

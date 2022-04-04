@@ -1,6 +1,6 @@
-# Getting help with bayespackage
+# Getting help with bayesianfingerprintr
 
-Thanks for using bayespackage!
+Thanks for using bayesianfingerprintr!
 Before filing an issue, there are a few places to explore and pieces to put together to make the process as smooth as possible.
 
 ## Make a reprex

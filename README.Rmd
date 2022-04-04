@@ -13,16 +13,16 @@ knitr::opts_chunk$set(
 )
 ```
 
-# bayespackage
+# bayesianfingerprintr
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of bayespackage is to ...
+The goal of bayesianfingerprintr is to ...
 
 ## Installation
 
-You can install the development version of bayespackage from [GitHub](https://github.com/) with:
+You can install the development version of bayesianfingerprintr from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
@@ -34,7 +34,7 @@ devtools::install_github("andburch/fingerprint-mixture-model")
 This is a basic example which shows you how to solve a common problem:
 
 ```{r example, eval=F}
-library(bayespackage)
+library(bayesianfingerprintr)
 
 fake.data <- 
   data.frame(
