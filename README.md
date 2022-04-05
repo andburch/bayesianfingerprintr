@@ -6,7 +6,11 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of bayesianfingerprintr is to …
+The goal of bayesianfingerprintr is to help archaeologists infer
+demographic information about ancient potters who leave fingerprint
+impressions on ceramic artifacts. It uses a Bayesian mixture modelling
+approach, coupled with a data-driven understanding of how epidermal
+ridge densities, sex, and age covary.
 
 ## Installation
 
@@ -20,43 +24,37 @@ devtools::install_github("andburch/fingerprint-mixture-model")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example, where we first make up some fake archaeological
+mean ridge breadth (MRB) data. Each data point has an identification
+number, a MRB measurement, and (we’re making this up here) maybe some
+other information like where it was recovered from.
 
 ``` r
 library(bayesianfingerprintr)
 
 fake.data <- 
   data.frame(
+  id.number = 1:100,
   mrb = c(rgamma(50,64,160), rgamma(50,2500,5000)),
   location = sample(c("palace", "domestic"), 100, replace = T)
   )
-
-output <- run_model(fake.data, "2sex.2age", 15000, 5, F, F, 3, F)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+Then we want to make sure the MRB values are scaled to match the modern
+reference data collected by Kralik and Novotny (2003):
 
 ``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
+fake.data$mrb <- fake.data$mrb*scaling_factor(fake.data$mrb)
 ```
 
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this. You could also
-use GitHub Actions to re-render `README.Rmd` every time you push. An
-example workflow can be found here:
-<https://github.com/r-lib/actions/tree/v1/examples>.
+Finally we can put these scaled MRB values into the model;
 
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+``` r
+output <- 
+  run_model(fake.data, #the data frame with the MRB values in a column named `mrb`
+            "2sex.2age", #which variant of the model we want to run
+            "2sex.2age.model.txt", #where to save the model specifications
+            150, #number of MCMC iterations per chain (should be over 150,000 normally)
+            5, #thinning factor
+            F, F, 3, F, 100) #other options
+```

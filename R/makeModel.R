@@ -13,6 +13,7 @@
 #' @examples
 #' print("hello")
 #'
+#' @export
 #' @import dplyr
 #' @rawNamespace import(stats, except = c(lag, filter))
 
@@ -353,12 +354,6 @@ raw.string <- paste(raw.string.head, raw.string.tail) %>%
 
 ## Men are SEX = 2!!! Women are SEX = 1
 
-
-ref_data <-
-  ref_data %>%
-  as_tibble() %>%
-  group_by(.data$ID) %>%
-  summarize(mrb=mean(.data$RB), age=unique(.data$age), sex=unique(.data$sex))
 
 male_coef <-
   nls(mrb ~ SSasymp(age, Asym, r0, lrc), data=dplyr::filter(ref_data, .data$sex==2)) %>%

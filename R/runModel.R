@@ -25,7 +25,7 @@
 #' \dontrun{
 #' db = data.frame(mrb=c(rgamma(50,64,160),
 #'                       rgamma(50,2500,5000)),
-#'                location=sample(c("palace", "domestic"), 100, replace=T)
+#'                location=sample(c("palace", "domestic"), 100, replace=TRUE)
 #'                )
 #' output = run_model(db, "2sex.2age", 15000, 5, F, F, 3, F)
 #'
@@ -33,11 +33,32 @@
 #'
 #' @import dplyr
 #' @rawNamespace import(stats, except = c(lag, filter))
+#' @importFrom jagsUI jags
+#' @importFrom purrr flatten_chr map_df
+#' @importFrom stringr str_replace_all
+#' @importFrom tibble rowid_to_column
+
+
 
 run_model <- function(
   db, model.opt = c("2sex.2age","1sex.1age","2sex.1age","1sex.2age", "compare1v2age", "compare1v2ageNEXT"), filename="bayesmodel.txt",
   iters, thin, is.parallel=F, DIC=F, n.chains=10, return.raw.samples=F,
   n.adapt=3000, n.burnin=100, fix.biggest=F,pseudopriors=NULL){
+
+  suppress_warnings <- function(.expr, .f, ...) {
+    eval.parent(substitute(
+      withCallingHandlers( .expr, warning = function(w) {
+        cm <- conditionMessage(w)
+        cond <-
+          if(is.character(.f)) grepl(.f, cm)
+        if (cond) {
+          invokeRestart("muffleWarning")
+        }
+      })
+    ))
+  }
+
+
 
   single.sex.model <- model.opt %in% c("1sex.1age") #also found in make_modelstring
 
@@ -61,7 +82,8 @@ run_model <- function(
   temp.data <-
     db %>%
     transmute(mrb=.data$mrb, sex=NA) %>%
-    as.list() %>% {`[<-`(.data, "N", length(.data$mrb))}
+    as.list()
+  temp.data$N <- length(temp.data$mrb)
 
   #Set the largest fingerprint size to be male (this is an assumption)
   if(fix.biggest){
@@ -82,15 +104,19 @@ run_model <- function(
   #determine if you want multiple cores or not
 
   if (is.parallel) {
-    samps <- jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% purrr::flatten_chr(),
+    samps <-  suppress_warnings(.f="At least one Rhat value could not be calculated.",
+                    .expr=jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% purrr::flatten_chr(),
                           model.file = filename, n.chains=n.chains, n.cores=n.chains, DIC=DIC,
                           parallel = is.parallel, n.adapt=n.adapt, n.burnin=n.burnin,
                           n.thin=thin, n.iter = iters)
+                    )
   } else {
-    samps <- jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% purrr::flatten_chr(),
+    samps <- suppress_warnings(.f="At least one Rhat value could not be calculated.",
+                    .expr=jagsUI::jags(data=temp.data, inits=NULL, parameters.to.save = nodes %>% purrr::flatten_chr(),
                           model.file = filename, n.chains=n.chains, n.cores=NULL, DIC=DIC,
                           parallel = is.parallel, n.adapt=n.adapt, n.burnin=n.burnin,
                           n.thin=thin, n.iter = iters)
+                    )
   }
 
   #remove all the other stuff jagsUI returns (wish I had used jagsUI earlier...)
@@ -108,37 +134,40 @@ run_model <- function(
     title <- ifelse(is.null(attributes(samps)$original.group),"bayes",attributes(samps)$original.group)
 
     post_data <-
-      tibble(est_age = purrr::map_df(samps, ~as_tibble(.data)  %>%
+      tibble(est_age = purrr::map_df(samps, ~as_tibble(.x)  %>%
                                        select(starts_with("age")), simplify=T) %>% unlist(),
 
-             LogLik = purrr::map_df(samps, ~as_tibble(.data)  %>%
+             LogLik = purrr::map_df(samps, ~as_tibble(.x)  %>%
                                       select(starts_with("LogLik")), simplify=T) %>% unlist(),
 
              #List estimate sex as only males NOW, but then we'll fix it later in the pipe
              #it had some weird behavior
-             est_sex = purrr::map_df(samps, ~as_tibble(.data)  %>%
-                                       select(starts_with("age")), simplify=T) %>%
-               unlist() %>% length() %>% rep(2,.data),
+             est_sex = rep(2,length(unlist(purrr::map_df(samps, ~as_tibble(.x)  %>%
+                                                           select(starts_with("age")), simplify=T) %>% unlist()))), #est_age %>% unlist() %>% length() %>% rep(2,.data),
 
-             rowid. = purrr::map_df(samps, ~as_tibble(.data)  %>%
+             rowid. = purrr::map_df(samps, ~as_tibble(.x)  %>%
                                       select(starts_with("age")), simplify=T) %>%
                unlist() %>%
                names() %>%
                stringr::str_replace_all("(age[:punct:])([:digit:]+)([:punct:][:digit:]+)","\\2") %>%
                as.numeric(),
              type = title
-      ) %>%
+      )
+    #add actual sex estimates when needed
 
-      #add actual sex estimates when needed
-
-      {if(!single.sex.model) mutate(.data,
-                                    est_sex = purrr::map_df(samps, ~as_tibble(.data) %>% select(starts_with("sex")),
+    if(!single.sex.model) {
+      post_data<-
+        mutate(post_data, est_sex = purrr::map_df(samps, ~as_tibble(.x) %>% select(starts_with("sex")),
                                                             simplify=T) %>% unlist()
-      ) else .data} %>%
-
-      mutate(est_sex = case_when(est_sex == 2 ~ "male", est_sex == 1 ~ "female",
-                                 TRUE ~ as.character(est_sex)) %>% factor(levels=c("male","female"))
-      ) %>%
+               )
+    }
+      post_data <-
+        mutate(post_data, est_sex =
+                 case_when(est_sex == 2 ~ "male",
+                           est_sex == 1 ~ "female",
+                           TRUE ~ as.character(est_sex)) %>%
+                 factor(levels=c("male","female"))
+               ) %>%
       left_join(db, by = "rowid.")
     attr(post_data,"original.group") <- run.name
     return(post_data)

@@ -58,7 +58,7 @@ This function, as with all Bayesian models, will probably take a long time to ru
 \dontrun{
 db = data.frame(mrb=c(rgamma(50,64,160),
                       rgamma(50,2500,5000)),
-               location=sample(c("palace", "domestic"), 100, replace=T)
+               location=sample(c("palace", "domestic"), 100, replace=TRUE)
                )
 output = run_model(db, "2sex.2age", 15000, 5, F, F, 3, F)
 
