@@ -14,7 +14,10 @@ ridge densities, sex, and age covary.
 
 ## Installation
 
-You can install the development version of bayesianfingerprintr from
+This package requires the use of JAGS (Just Another Gibbs Sampler), and you'll need to install this software separately. 
+Go to this page (https://sourceforge.net/projects/mcmc-jags/](https://sourceforge.net/projects/mcmc-jags/)) and hit "Download". The instructions should help you through the rest of the process, but if it doesn't work for you, you can go into the JAGS folder and find the specific version for your operating system.
+
+Then you can install the development version of bayesianfingerprintr from
 [GitHub](https://github.com/) with:
 
 ``` r
