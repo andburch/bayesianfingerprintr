@@ -25,7 +25,8 @@ make_modelstring <-
     raw.string.head<-NULL
     raw.string.tail <-NULL
     raw.string <-NULL
-    single.sex.opts <- c("1sex.1age")
+    nodes <- NULL
+    single.sex.opts <- c("1sex.1age","1sex.2age")
     ## Men are SEX = 2!!! Women are SEX = 1
     {
       raw.string.head <-
@@ -49,9 +50,6 @@ for (i in 1:N) {
 
   #The asymptote equation is: Asym+(R0-Asym)*exp(-exp(lrc)*input)
    "
-
-      raw.string.tail <- NULL
-      nodes <- NULL
 
       {
         nodes["2sex.2age"] <-
