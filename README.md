@@ -22,7 +22,7 @@ Then you can install the development version of bayesianfingerprintr from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("andburch/fingerprint-mixture-model")
+devtools::install_github("andburch/bayesianfingerprintr")
 ```
 
 ## Example
