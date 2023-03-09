@@ -59,5 +59,5 @@ output <-
             "2sex.2age.model.txt", #where to save the model specifications
             150, #number of MCMC iterations per chain (should be over 150,000 normally)
             5, #thinning factor
-            F, F, 3, F, 100) #other options
+            FALSE, FALSE, 3, FALSE, 100) #other options
 ```
