@@ -11,22 +11,22 @@ run_model(
   filename = "bayesmodel.txt",
   iters,
   thin,
-  is.parallel = F,
-  DIC = F,
+  is.parallel = FALSE,
+  DIC = FALSE,
   n.chains = 10,
-  return.raw.samples = F,
+  return.raw.samples = FALSE,
   n.adapt = 3000,
   n.burnin = 100,
-  fix.biggest = F,
+  fix.biggest = FALSE,
   pseudopriors = NULL
 )
 }
 \arguments{
-\item{db}{the data frame of observed MRB values (contained in a column named 'mrb')}
+\item{db}{the data frame with observed MRB values (these must contained in a column named `mrb`)}
 
 \item{model.opt}{select which version of the model to run}
 
-\item{filename}{the name of the file that the JAGS model will be saved to}
+\item{filename}{the name of the file that the JAGS model specifications will be saved to}
 
 \item{iters}{the number of iterations of the MCMC sampler}
 
@@ -49,7 +49,7 @@ run_model(
 \item{pseudopriors}{(optional) this is for passing pseudopriors into the model when running a "super model"}
 }
 \value{
-depending on the \code{return.raw.samples} parameter, either a MCMC list object or a data frame with the posterior distribution joined with the original data set.
+depending on the \code{return.raw.samples} parameter, either a MCMC list object or a data frame with the posterior distribution joined with the original data set. If the latter is chosen, the `rowid.` column refers to the original row in the data frame that the estimates were made for.
 }
 \description{
 This function, as with all Bayesian models, will probably take a long time to run.
